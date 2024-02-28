@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from model import TMC
+# from model import TMC
 from data import Multi_view_data
 import warnings
 
