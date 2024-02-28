@@ -1,4 +1,5 @@
-pytorch-1.10.2
-scipy-1.5.4
+pytorch-2.1.0+cu121
+cuda-12.1
+scipy
 sklearn
 numpy
