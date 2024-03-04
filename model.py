@@ -6,11 +6,30 @@ import torch.nn as nn
 class TMDLO(nn.Module):
     def __init__(self, classes, views, classifier_dims):
         """
-        :param classes:
-        :param views:
-        :param classifier_dims:
+        :param classes:分类的类别数量
+        :param views:视图数量
+        :param classifier_dims:神经网络各层维度
         """
-        super().__init__()
+        super(TMDLO, self).__init__()
+        self.views = views
+        self.classes = classes
+        self.Classifiers = nn.ModuleList([Classifier(classifier_dims[i], self.classes) for i in
+                                          range(self.views)])  # 多个视图的分类器。每个视图都有一个独立的分类器，用于处理对应视图的特征
+
+        def Opinion_Aggregation(self, evidences):
+            """
+            :param evidence:一个样本的所有视图的e参数字典
+            :return:可信的累计分类意见结果
+            """
+            # 初始化 e_M 列表，长度为 evidences 中最长列表的长度，每个元素初始化为 0
+            max_length = max(len(evidence) for evidence in evidences.values())
+            e_M = [0] * max_length
+            for evidence in evidences.values():
+                for k, e in enumerate(evidence):
+                    e_M[k] += e
+            S_M = 0
+            for k in range(classes):
+                S_M += (e_M[k] + 1)
 
 
 # 神经网络结构
