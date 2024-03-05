@@ -45,15 +45,38 @@ class TMDLO(nn.Module):
 
     def infer(self, input):
         """
-        各个视图evidence的推导
+        一个样本的各个视图evidence的推导
         :param input: 多视图数据
-        :return: 一个样本的所有视图的evidence
+        :return: 一个样本的所有视图的evidence字典
         """
-        evidences = dict() # 所有视图的evidence
+        evidences = dict()  # 所有视图的evidence
         for v_num in range(self.views):
             evidences[v_num] = self.Classifiers[v_num](input[v_num])
         return evidences
 
+    def forward(self, X, y, global_step):
+        """
+        模型的前向传播
+        :param X:输入数据
+        :param y:标签
+        :param global_step:全局步数
+        :return:
+        """
+        evidences = self.infer(X)
+        loss = 0  # 整体损失
+        alpha_kM, b_kM, U_M, a_kM = self.Opinion_Aggregation(evidences)
+
+        # evidence = self.infer(X)
+        # loss = 0 # 整体损失
+        # alpha = dict()
+        # for v_num in range(len(X)):
+        #     alpha[v_num] = evidence[v_num] + 1
+        #     loss += ce_loss(y, alpha[v_num], self.classes, global_step, self.lambda_epochs)
+        # alpha_a = self.DS_Combin(alpha) 聚合后的狄利克雷参数
+        # evidence_a = alpha_a - 1 聚合后的evidence参数
+        # loss += ce_loss(y, alpha_a, self.classes, global_step, self.lambda_epochs)
+        # loss = torch.mean(loss)
+        # return evidence, evidence_a, loss
 
 
 # 神经网络结构
