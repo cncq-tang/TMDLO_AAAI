@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-# from model import TMC
+from model import TMDLO
 from data import Multi_view_data
 import warnings
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     print('The learning rate =%.4f' % args.lr)
     print('-----------------------------------------------------------------------')
 
-    model = TMC(10, args.views, args.dims, args.lambda_epochs)
+    model = TMDLO(10, args.views, args.dims)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)  # weight_decay为正则化L2强度
 
     model.cuda()

@@ -43,6 +43,17 @@ class TMDLO(nn.Module):
 
         return alpha_kM, b_kM, U_M, a_kM
 
+    def infer(self, input):
+        """
+        各个视图evidence的推导
+        :param input: 多视图数据
+        :return: 一个样本的所有视图的evidence
+        """
+        evidences = dict() # 所有视图的evidence
+        for v_num in range(self.views):
+            evidences[v_num] = self.Classifiers[v_num](input[v_num])
+        return evidences
+
 
 
 # 神经网络结构
