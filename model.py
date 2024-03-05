@@ -18,7 +18,7 @@ class TMDLO(nn.Module):
 
     def Opinion_Aggregation(self, evidences):
         """
-        :param evidence:一个样本的所有视图的e参数字典
+        :param evidences:一个样本的所有视图的e参数字典
         :return:可信的累计分类意见结果
         """
         # 所有视图的各个类的分类证据和
