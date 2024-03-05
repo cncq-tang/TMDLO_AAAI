@@ -16,32 +16,33 @@ class TMDLO(nn.Module):
         self.Classifiers = nn.ModuleList([Classifier(classifier_dims[i], self.classes) for i in
                                           range(self.views)])  # 多个视图的分类器。每个视图都有一个独立的分类器，用于处理对应视图的特征
 
-        def Opinion_Aggregation(self, evidences):
-            """
-            :param evidence:一个样本的所有视图的e参数字典
-            :return:可信的累计分类意见结果
-            """
-            # 所有视图的各个类的分类证据和
-            e_kM = [0.0] * classes
-            # 对 k 类的先验偏好，如果没有偏好则默认为 1/k
-            a_kM = [1.0 / classes] * classes
+    def Opinion_Aggregation(self, evidences):
+        """
+        :param evidence:一个样本的所有视图的e参数字典
+        :return:可信的累计分类意见结果
+        """
+        # 所有视图的各个类的分类证据和
+        e_kM = [0.0] * self.classes
+        # 对 k 类的先验偏好，如果没有偏好则默认为 1/k
+        a_kM = [1.0 / self.classes] * self.classes
 
-            # 计算每个类别的分类证据和
-            for evidence in evidences.values():
-                for k, e in enumerate(evidence):
-                    e_kM[k] += e
+        # 计算每个类别的分类证据和
+        for evidence in evidences.values():
+            for k, e in enumerate(evidence):
+                e_kM[k] += e
 
-            # 计算所有视图的每个类别的狄利克雷参数累计和
-            alpha_kM = [e_k + 1 for e_k in e_kM]
-            # 计算 Dirichlet strength
-            S_M = sum(e_kM) + classes
+        # 计算所有视图的每个类别的狄利克雷参数累计和
+        alpha_kM = [e_k + 1 for e_k in e_kM]
+        # 计算 Dirichlet strength
+        S_M = sum(e_kM) + self.classes
 
-            # 计算所有视图的每个类别的分类概率
-            b_kM = [e_k / S_M for e_k in e_kM]
-            # 计算累计意见的不确定性
-            U_M = 1.0 - sum(b_kM)
+        # 计算所有视图的每个类别的分类概率
+        b_kM = [e_k / S_M for e_k in e_kM]
+        # 计算累计意见的不确定性
+        U_M = 1.0 - sum(b_kM)
 
-            return alpha_kM, b_kM, U_M, a_kM
+        return alpha_kM, b_kM, U_M, a_kM
+
 
 
 # 神经网络结构
