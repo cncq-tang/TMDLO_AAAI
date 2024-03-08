@@ -53,25 +53,27 @@ def con_loss(evidences, a, views, classes):
 
 # 模型结构
 class TMDLO(nn.Module):
-    def __init__(self, classes, views, classifier_dims):
+    def __init__(self, classes, views, lambda_con, classifier_dims):
         """
-        :param classes:分类的类别数量
-        :param views:视图数量
-        :param classifier_dims:神经网络各层维度
+        :param classes: 分类的类别数量
+        :param views: 视图数量
+        :param lambda_con: 一致性损失调节系数
+        :param classifier_dims: 神经网络各层维度
         """
         super(TMDLO, self).__init__()
         self.views = views
         self.classes = classes
+        self.lambda_con = lambda_con
         self.Classifiers = nn.ModuleList([Classifier(classifier_dims[i], self.classes) for i in
                                           range(self.views)])  # 多个视图的分类器。每个视图都有一个独立的分类器，用于处理对应视图的特征
 
     def infer(self, X):
         """
         一个样本的各个视图evidence的推导
-        :param X: 多视图数据
+        :param X: 一个样本的多视图数据
         :return: 一个样本的所有视图的evidence字典
         """
-        evidences = dict()  # 所有视图的evidence
+        evidences = torch.zeros((self.views, self.classes))  # 所有视图的evidence
         for v_num in range(self.views):
             evidences[v_num] = self.Classifiers[v_num](X[v_num])
         return evidences
@@ -81,26 +83,15 @@ class TMDLO(nn.Module):
         模型的前向传播
         :param X:输入数据
         :param y:标签
-        :param global_step:全局步数
-        :return:
+        :return:一个样本的损失
         """
         evidences = self.infer(X)
+        a = torch.ones((1, self.classes)) / self.classes  # 对k类的偏好系数，没有偏好设置为1/classes
         loss = 0  # 整体损失
-        alpha_kM, b_kM, U_M, a_kM = self.Opinion_Aggregation(evidences)
-        for v_num in range(len(X)):
-            print(loss)
-
-        # evidence = self.infer(X)
-        # loss = 0 # 整体损失
-        # alpha = dict()
-        # for v_num in range(len(X)):
-        #     alpha[v_num] = evidence[v_num] + 1
-        #     loss += ce_loss(y, alpha[v_num], self.classes, global_step, self.lambda_epochs)
-        # alpha_a = self.DS_Combin(alpha) 聚合后的狄利克雷参数
-        # evidence_a = alpha_a - 1 聚合后的evidence参数
-        # loss += ce_loss(y, alpha_a, self.classes, global_step, self.lambda_epochs)
-        # loss = torch.mean(loss)
-        # return evidence, evidence_a, loss
+        L_acc = acc_loss(y, evidences, self.classes)
+        L_con = con_loss(evidences, a, self.views, self.classes)
+        loss += (L_acc + self.lambda_con * L_con)
+        return loss
 
 
 # 神经网络结构
