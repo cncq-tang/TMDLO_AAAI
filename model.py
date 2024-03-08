@@ -11,13 +11,13 @@ def acc_loss(y, alpha_a, classes):
     :param classes:总的分类类别数
     :return:一个样本的L_acc(alpha_i)
     """
-    S = torch.sum(alpha_a, dim=1, keepdim=True)
+    S = torch.sum(alpha_a)
     P = alpha_a / S  # 预测项P_ij
     label = F.one_hot(y, num_classes=classes)  # Y_ij
     diff = label.float() - P  # 计算 P_ij 与 Y_ij 的差值
     L_err = diff ** 2  # L_err预测损失项
     L_var = torch.mul(P, 1 - P) / (S + 1)  # L_var方差
-    L_acc = torch.sum(L_err + L_var, dim=1, keepdim=True)
+    L_acc = torch.sum(L_err + L_var)
     return L_acc
 
 
@@ -41,8 +41,8 @@ def con_loss(evidences, a, views, classes):
         sum_E = 0.0
         for v in range(views):  # 两两组合不重复
             if m != v:
-                P_mv = (P[m] ** 2 + P[v] ** 2) / 2.0
-                H_mv = -torch.sum(torch.mul(P_mv, torch.log2(P_mv)), dim=1, keepdim=True)
+                P_mv = (P[m] + P[v]) / 2.0
+                H_mv = -torch.sum(torch.mul(P_mv, torch.log2(P_mv)))
                 E_mv = (H_mv - H[m] / 2.0 - H[v] / 2.0)
                 sum_E = sum_E + E_mv
         sum_E = sum_E / (views - 1)
