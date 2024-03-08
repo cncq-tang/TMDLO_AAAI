@@ -5,25 +5,25 @@ import torch.nn.functional as F
 
 def acc_loss(y, alpha_a, classes):
     """
-    一个样本的预测损失项
+    计算一个样本的预测损失项
     :param y:数据标签
     :param alpha_a:意见聚合后的狄利克雷参数
     :param classes:总的分类类别数
-    :return:
+    :return:一个样本的L_acc(alpha_i)
     """
-    S = torch.sum(alpha_a)
-    P = alpha_a / S  # P_ij
+    S = torch.sum(alpha_a, dim=1, keepdim=True)
+    P = alpha_a / S  # 预测项P_ij
     label = F.one_hot(y, num_classes=classes)  # Y_ij
-    diff = P - label.float()  # 计算 P_ij 与 Y_ij 的差值
-    L_err = diff ** 2  # L_err损失项
-    L_var = torch.mul(P, 1 - P) / (S + 1)
-    L_acc = torch.add(L_err, L_var)
-    return torch.sum(L_acc)
+    diff = label.float() - P  # 计算 P_ij 与 Y_ij 的差值
+    L_err = diff ** 2  # L_err预测损失项
+    L_var = torch.mul(P, 1 - P) / (S + 1)  # L_var方差
+    L_acc = torch.sum(L_err + L_var, dim=1, keepdim=True)
+    return L_acc
 
 
 def con_loss(evidences, a, views, classes):
     """
-    一个样本的所有视图的一致性损失
+    计算一个样本的所有视图的一致性损失
     :param evidences: 一个样本的所有视图evidence
     :param a: 对k类的先验偏好
     :param views:视图数量
@@ -36,27 +36,20 @@ def con_loss(evidences, a, views, classes):
     U = classes / S  # 每个视图的分类不确定性
     P = B + a * U  # 用于计算熵的每个视图的P_k
     H = -torch.sum(torch.mul(P, torch.log2(P)), dim=1, keepdim=True)
-    sum_E = 0.0
-    for i in range(views - 1):
-        for j in range(i + 1, views):  # 两两组合不重复
-            P_w1w2 = (P[i] ** 2 + P[j] ** 2) / 2
-            H_w1w2 = -torch.sum(torch.mul(P_w1w2, torch.log2(P_w1w2)))
-            sum_E += (H_w1w2 - H[i] - H[j])
-    return sum_E / views
+    L_con = 0.0
+    for m in range(views):
+        sum_E = 0.0
+        for v in range(views):  # 两两组合不重复
+            if m != v:
+                P_mv = (P[m] ** 2 + P[v] ** 2) / 2.0
+                H_mv = -torch.sum(torch.mul(P_mv, torch.log2(P_mv)), dim=1, keepdim=True)
+                E_mv = (H_mv - H[m] / 2.0 - H[v] / 2.0)
+                sum_E = sum_E + E_mv
+        sum_E = sum_E / (views - 1)
+        L_con = L_con + sum_E
+    return L_con
 
 
-# def ce_loss(p, alpha, c, global_step, annealing_step):
-#     S = torch.sum(alpha, dim=1, keepdim=True)
-#     E = alpha - 1
-#     label = F.one_hot(p, num_classes=c)
-#     A = torch.sum(label * (torch.digamma(S) - torch.digamma(alpha)), dim=1, keepdim=True)
-#
-#     annealing_coef = min(1, global_step / annealing_step)
-#
-#     alp = E * (1 - label) + 1
-#     B = annealing_coef * KL(alp, c)
-#
-#     return (A + B)
 # 模型结构
 class TMDLO(nn.Module):
     def __init__(self, classes, views, classifier_dims):
